@@ -64,15 +64,20 @@ public class MongoDBSender extends AbstractSender {
     */
    private String dbPassword = null;
 
+   /**
+    * Size of the connection pool for MongoDB per one Sender instance
+    */
+   private int connectionPoolSize = 5;
+
    @Override
    public void init() throws Exception {
       if (target.contains(":")) {
          final String[] addr = target.split(":", 2);
          final String host = addr[0];
          final int port = Integer.valueOf(addr[1]);
-         mongoClient = new MongoClient(new ServerAddress(host, port), MongoClientOptions.builder().connectionsPerHost(1).build());
+         mongoClient = new MongoClient(new ServerAddress(host, port), MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
       } else {
-         mongoClient = new MongoClient(target, MongoClientOptions.builder().connectionsPerHost(1).build());
+         mongoClient = new MongoClient(target, MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
       }
 
       db = mongoClient.getDB(dbName);
@@ -124,5 +129,13 @@ public class MongoDBSender extends AbstractSender {
 
    public void setDbPassword(String dbPassword) {
       this.dbPassword = dbPassword;
+   }
+
+   public int getConnectionPoolSize() {
+      return connectionPoolSize;
+   }
+
+   public void setConnectionPoolSize(int connectionPoolSize) {
+      this.connectionPoolSize = connectionPoolSize;
    }
 }
