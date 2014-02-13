@@ -19,11 +19,10 @@
  */
 package org.perfcake.message.sender;
 
-import com.mongodb.CommandResult;
 import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
-import org.apache.log4j.Logger;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
 import org.perfcake.PerfCakeException;
 import org.perfcake.message.Message;
 import org.perfcake.reporting.MeasurementUnit;
@@ -34,16 +33,41 @@ import java.io.StringReader;
 import java.util.Map;
 
 /**
+ * This sender takes the message, line by line and evaluates it as commands at the connected MongoDB.
+ *
  * @author Martin Večeřa <marvenec@gmail.com>
  */
 public class MongoDBSender extends AbstractSender {
 
+   /**
+    * Client for the MongoDB
+    */
    private MongoClient mongoClient;
+
+   /**
+    * Name of the database to be used
+    */
    private String dbName;
+
+   /**
+    * MongoDB database object
+    */
    private DB db;
 
+   /**
+    * Username for MongoDB authentication
+    */
    private String dbUsername = null;
+
+   /**
+    * Password for MongoDB authentication
+    */
    private String dbPassword = null;
+
+   /**
+    * Size of the connection pool for MongoDB per one Sender instance
+    */
+   private int connectionPoolSize = 5;
 
    @Override
    public void init() throws Exception {
@@ -51,10 +75,9 @@ public class MongoDBSender extends AbstractSender {
          final String[] addr = target.split(":", 2);
          final String host = addr[0];
          final int port = Integer.valueOf(addr[1]);
-
-         mongoClient = new MongoClient(host, port);
+         mongoClient = new MongoClient(new ServerAddress(host, port), MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
       } else {
-         mongoClient = new MongoClient(target);
+         mongoClient = new MongoClient(target, MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
       }
 
       db = mongoClient.getDB(dbName);
@@ -106,5 +129,13 @@ public class MongoDBSender extends AbstractSender {
 
    public void setDbPassword(String dbPassword) {
       this.dbPassword = dbPassword;
+   }
+
+   public int getConnectionPoolSize() {
+      return connectionPoolSize;
+   }
+
+   public void setConnectionPoolSize(int connectionPoolSize) {
+      this.connectionPoolSize = connectionPoolSize;
    }
 }
