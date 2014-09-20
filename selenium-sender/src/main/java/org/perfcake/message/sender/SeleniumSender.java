@@ -48,11 +48,6 @@ public class SeleniumSender extends AbstractSender {
    private String browser;
 
    /**
-    * Base url.
-    */
-   private String baseUrl;
-
-   /**
     * Path to HTML test suite.
     */
    private String testSuitePath;
@@ -91,14 +86,6 @@ public class SeleniumSender extends AbstractSender {
       this.browser = browser;
    }
 
-   public String getBaseUrl() {
-      return baseUrl;
-   }
-
-   public void setBaseUrl(String baseUrl) {
-      this.baseUrl = baseUrl;
-   }
-
    public String getLogFileName() {
       return logFileName;
    }
@@ -129,7 +116,7 @@ public class SeleniumSender extends AbstractSender {
       testSuitePath = message.getPayload().toString();
       log.info("testSuitePath=" + testSuitePath);
       adapter.setBrowserString(browser);
-      adapter.setStartURL(baseUrl);
+      adapter.setStartURL(target);
       adapter.setSuiteFilePath(testSuitePath);
       adapter.setResultFilePath(logFileName);
    }
