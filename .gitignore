@@ -1,10 +1,21 @@
+# Generated files
 *.class
+target
+*.csv
+
+# Eclipse stuff
+bin
+.metadata
+.settings
+.project
+.classpath
+
+# IntelliJ Idea
+.idea
+*.iml
 
 # Package Files #
 *.jar
 *.war
 *.ear
 
-target/
-.idea/
-*.iml
