@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<properties>
 		<perfcake.version>4.1</perfcake.version>
-		<perfrepo.version>1.2</perfrepo.version>
+		<perfrepo.version>1.1</perfrepo.version>
 	</properties>
 	<dependencies>
 		<dependency>
