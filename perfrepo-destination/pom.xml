@@ -3,11 +3,16 @@
    <modelVersion>4.0.0</modelVersion>
    <groupId>org.perfcake.plugins</groupId>
    <artifactId>perfrepo-destination</artifactId>
-   <version>1.4-SNAPSHOT</version>
+   <version>7.0-SNAPSHOT</version>
    <packaging>jar</packaging>
    <properties>
-      <perfcake.version>6.0-SNAPSHOT</perfcake.version>
-      <perfrepo.version>1.4</perfrepo.version>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <java.version>1.8</java.version>
+      <perfcake.version>${project.version}</perfcake.version>
+      <perfrepo.version>1.6</perfrepo.version>
+      <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
+      <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
+      <maven.dependency.plugin.version>2.10</maven.dependency.plugin.version>
    </properties>
    <dependencies>
       <dependency>
@@ -26,7 +31,7 @@
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
-            <version>2.4</version>
+            <version>${maven.jar.plugin.version}</version>
             <configuration>
                <archive>
                   <manifest>
@@ -38,6 +43,7 @@
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
+            <version>${maven.dependency.plugin.version}</version>
             <executions>
                <execution>
                   <id>copy-dependencies</id>
@@ -60,10 +66,10 @@
          <plugins>
             <plugin>
                <artifactId>maven-compiler-plugin</artifactId>
-               <version>2.3.2</version>
+               <version>${maven.compiler.plugin.version}</version>
                <configuration>
-                  <source>1.8</source>
-                  <target>1.8</target>
+                  <source>${java.version}</source>
+                  <target>${java.version}</target>
                </configuration>
             </plugin>
          </plugins>

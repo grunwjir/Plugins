@@ -17,7 +17,7 @@
  * limitations under the License.
  * -----------------------------------------------------------------------/
  */
-package org.perfcake.reporting.destinations;
+package org.perfcake.reporting.destination;
 
 import org.perfcake.reporting.Measurement;
 import org.perfcake.reporting.MeasurementUnit;
@@ -41,7 +41,7 @@ import java.util.Set;
  *
  * @author Pavel Drozd
  */
-public class PerfRepoDestination implements Destination {
+public class PerfRepoDestination extends AbstractDestination {
 
    private static final String PERCENTAGE = "Percentage";
 
