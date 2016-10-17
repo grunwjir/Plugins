@@ -18,7 +18,8 @@ Properties
 
 - **`metric`** - Defines test metric, is related to reporter. The metric should be assigned to the test in the PerfRepo.
 - **`repositoryUrl`** - The URL of running PerfRepo application.
-- **`authenticationHeader`** - Authentication header for the rest requests (username and password combined into a string "username:password" and then encoded using the RFC2045-MIME variant of Base64).
+- **`username`** - The username of the PerfRepo user.
+- **`password`** - The password of the PerfRepo user.
 - **`testUID`** - Defines the test which is executed; it matches the test uid in the PerfRepo.
 - **`tags`** - Tags related to test execution. More tags should be separated by ';'.
 - **`testExecutionName`** - The name of the Test Execution which is displayed in the PerfRepo.
@@ -33,13 +34,12 @@ Scenario example
 ----------------
 
 ```xml
-<?xml version="2.0" encoding="utf-8"?>
-<scenario xmlns="urn:perfcake:scenario:4.0">
-	<generator class="DefaultMessageGenerator" threads="${perfcake.thread.count:100}">
-		<run type="${perfcake.run.type:time}" value="${perfcake.run.duration:300000}"/>
-	</generator>
+<?xml version="1.0" encoding="utf-8"?>
+<scenario xmlns="urn:perfcake:scenario:7.0">
+	<run type="${perfcake.run.type:time}" value="${perfcake.run.duration:300000}"/>
+	<generator class="DefaultMessageGenerator" threads="${perfcake.thread.count:100}"/>
 	<sender class="DummySender">
-		<property name="target" value="Out There!"/>
+		<target>Out There!"</target>
 	</sender>
 	<reporting>
 		<reporter class="ThroughputStatsReporter">
@@ -51,7 +51,8 @@ Scenario example
 				<period type="time" value="${perfcake.run.duration:300000}"/>
 				<property name="metric" value="throughput"/>
 				<property name="repositoryUrl" value="perfrepoapp.org"/>
-				<property name="authenticationHeader" value="dGVhbFNvJKTp0ZWOtc29hKSM="/>
+				<property name="username" value="username"/>
+				<property name="password" value="password"/>
 				<property name="testUID" value="${perfcake.scenario}"/>
 				<property name="tags" value="jdk8;rhel6"/>
 				<property name="testExecutionName" value="Performance: ${perfcake.scenario}"/>
