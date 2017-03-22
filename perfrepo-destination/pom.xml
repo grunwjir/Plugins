@@ -9,7 +9,7 @@
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <java.version>1.8</java.version>
       <perfcake.version>${project.version}</perfcake.version>
-      <perfrepo.version>1.6</perfrepo.version>
+      <perfrepo.version>1.7</perfrepo.version>
       <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
       <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
       <maven.dependency.plugin.version>2.10</maven.dependency.plugin.version>

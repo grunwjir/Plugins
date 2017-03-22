@@ -8,8 +8,8 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import org.perfcake.reporting.Measurement;
 import org.perfcake.reporting.MeasurementUnit;
 import org.perfcake.reporting.Quantity;
 import org.perfcake.reporting.ReportingException;
+import org.perfcake.reporting.reporter.Reporter;
 
 import org.perfrepo.client.PerfRepoClient;
 import org.perfrepo.model.TestExecution;
@@ -37,11 +38,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The destination that store the {@link Measurement} into the PerfRepo application.
+ * The destination that store the {@link Measurement} into PerfRepo application.
  *
  * @author Pavel Drozd
  */
-public class PerfRepoDestination extends AbstractDestination {
+public class PerfRepoDestination implements Destination {
 
    private static final String PERCENTAGE = "Percentage";
 
@@ -50,7 +51,7 @@ public class PerfRepoDestination extends AbstractDestination {
    private static final String ITERATION = "Iteration";
 
    /**
-    * Client for the PerfRepo
+    * PerfRepo Client used to create test executions.
     */
    private PerfRepoClient client;
 
@@ -89,20 +90,9 @@ public class PerfRepoDestination extends AbstractDestination {
    private String repositoryUrl;
 
    /**
-    * Authentication header for the rest requests (username and password combined into a string "username:password"
-    * and then encoded using the RFC2045-MIME variant of Base64).
+    * Authentication header for the rest requests.
     */
    private String authenticationHeader;
-
-   /**
-    * Username for REST requests.
-    */
-   private String username;
-
-   /**
-    * Password for REST requests.
-    */
-   private String password;
 
    /**
     * Tags related to test execution. More tags should be separated by {@value #delimiter}.
@@ -154,8 +144,13 @@ public class PerfRepoDestination extends AbstractDestination {
     */
    private Map<String, String> parsedValueParameters;
 
+   /*
+    * (non-Javadoc)
+    *
+    * @see org.perfcake.reporting.destination.Destination#open()
+    */
    @Override
-   public void open() {
+   public void open(final Reporter parentReporter) {
       parsedTags = parseTags(tags);
       if (parameters != null && !parameters.isEmpty()) {
          parsedParameters = parseParameters(parameters);
@@ -163,7 +158,7 @@ public class PerfRepoDestination extends AbstractDestination {
       if (valueParameters != null && !valueParameters.isEmpty()) {
          parsedValueParameters = parseParameters(valueParameters);
       }
-      client = new PerfRepoClient(repositoryUrl, "/", username, password);
+      client = new PerfRepoClient(repositoryUrl, "/", authenticationHeader);
       if (testExecutionName == null || testExecutionName.isEmpty()) {
          testExecutionName = testUID;
       }
@@ -301,22 +296,6 @@ public class PerfRepoDestination extends AbstractDestination {
 
    public void setAuthenticationHeader(String authenticationHeader) {
       this.authenticationHeader = authenticationHeader;
-   }
-
-   public String getUsername() {
-      return username;
-   }
-
-   public void setUsername(final String username) {
-      this.username = username;
-   }
-
-   public String getPassword() {
-      return password;
-   }
-
-   public void setPassword(final String password) {
-      this.password = password;
    }
 
    public Long getTestExecutionId() {
