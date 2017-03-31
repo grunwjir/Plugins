@@ -274,7 +274,7 @@ public class HttpClientSender extends AbstractSender {
 
       StringEntity msg = null;
       if (payload != null && (currentRequest instanceof HttpEntityEnclosingRequestBase)) {
-         ((HttpEntityEnclosingRequestBase) currentRequest).setEntity(new StringEntity(payload, ContentType.getByMimeType("text/plain; charset=utf-8")));
+         ((HttpEntityEnclosingRequestBase) currentRequest).setEntity(new StringEntity(payload, ContentType.create("text/plain", Utils.getDefaultEncoding())));
       }
 
       if (storeCookies) {
