@@ -28,10 +28,20 @@ import org.perfcake.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.fluent.Content;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.fluent.Response;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpTrace;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,9 +100,10 @@ public class HttpClientSender extends AbstractSender {
     */
    private Method currentMethod;
 
-   private Request currentRequest;
+   private HttpClient httpClient = HttpClients.createDefault();
+
+   private HttpUriRequest currentRequest;
    private HttpResponse currentHttpResponse;
-   private Content currentHttpResponseContent;
 
    /**
     * Enumeration on available HTTP methods.
@@ -237,32 +248,33 @@ public class HttpClientSender extends AbstractSender {
       final URI uri = url.toURI();
       switch (currentMethod) {
          case GET:
-            currentRequest = Request.Get(uri);
+            currentRequest = new HttpGet(uri);
             break;
          case POST:
-            currentRequest = Request.Post(uri);
+            currentRequest = new HttpPost(uri);
             break;
          case PUT:
-            currentRequest = Request.Put(uri);
+            currentRequest = new HttpPut(uri);
             break;
          case PATCH:
-            currentRequest = Request.Patch(uri);
+            currentRequest = new HttpPatch(uri);
             break;
          case DELETE:
-            currentRequest = Request.Delete(uri);
+            currentRequest = new HttpDelete(uri);
             break;
          case HEAD:
-            currentRequest = Request.Head(uri);
+            currentRequest = new HttpHead(uri);
             break;
          case TRACE:
-            currentRequest = Request.Trace(uri);
+            currentRequest = new HttpTrace(uri);
             break;
          case OPTIONS:
-            currentRequest = Request.Options(uri);
+            currentRequest = new HttpOptions(uri);
       }
 
-      if (payload != null && (Method.POST.equals(currentMethod) || Method.PUT.equals(currentMethod) || Method.PATCH.equals(currentMethod))) {
-         currentRequest.bodyString(payload, ContentType.getByMimeType("text/plain; charset=utf-8"));
+      StringEntity msg = null;
+      if (payload != null && (currentRequest instanceof HttpEntityEnclosingRequestBase)) {
+         ((HttpEntityEnclosingRequestBase) currentRequest).setEntity(new StringEntity(payload, ContentType.getByMimeType("text/plain; charset=utf-8")));
       }
 
       if (storeCookies) {
@@ -306,8 +318,7 @@ public class HttpClientSender extends AbstractSender {
 
    @Override
    public Serializable doSend(final Message message, final MeasurementUnit measurementUnit) throws Exception {
-      final Response response = currentRequest.execute();
-      currentHttpResponse = response.returnResponse();
+      currentHttpResponse = httpClient.execute(currentRequest);
 
       final int respCode = currentHttpResponse.getStatusLine().getStatusCode();
 
