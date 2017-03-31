@@ -41,7 +41,6 @@ import java.io.Serializable;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpCookie;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -53,7 +52,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 /**
- * Sends messages via HTTP protocol using Apache HttpClient.
+ * Sends messages via HTTP protocol.
  *
  * @author <a href="mailto:marvenec@gmail.com">Martin Večeřa</a>
  * @author <a href="mailto:pavel.macik@gmail.com">Pavel Macík</a>
@@ -97,8 +96,6 @@ public class HttpClientSender extends AbstractSender {
 
    /**
     * Enumeration on available HTTP methods.
-    *
-    * @see HttpURLConnection#setRequestMethod(String)
     */
    public static enum Method {
       GET, POST, HEAD, OPTIONS, PUT, DELETE, TRACE, PATCH
@@ -113,12 +110,6 @@ public class HttpClientSender extends AbstractSender {
     * The property for expected response codes.
     */
    private String expectedResponseCodes = null;
-
-   /**
-    * x;
-    * The HTTP request connection.
-    */
-   //   protected HttpClient httpClient;
 
    /**
     * When true, cookies are stored between HTTP requests.
