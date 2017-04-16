@@ -2,7 +2,7 @@
  * -----------------------------------------------------------------------\
  * PerfCake
  *  
- * Copyright (C) 2010 - 2014 the original author or authors.
+ * Copyright (C) 2010 - 2017 the original author or authors.
  *  
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,22 @@
  */
 package org.perfcake.message.sender;
 
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
 import org.perfcake.PerfCakeException;
 import org.perfcake.message.Message;
 import org.perfcake.reporting.MeasurementUnit;
 
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoDatabase;
+import org.bson.BsonDocument;
+
 import java.io.BufferedReader;
 import java.io.Serializable;
 import java.io.StringReader;
-import java.util.Map;
+import java.util.Collections;
+import java.util.Properties;
 
 /**
  * This sender takes the message, line by line and evaluates it as commands at the connected MongoDB.
@@ -52,7 +56,7 @@ public class MongoDBSender extends AbstractSender {
    /**
     * MongoDB database object
     */
-   private DB db;
+   private MongoDatabase db;
 
    /**
     * Username for MongoDB authentication
@@ -70,40 +74,45 @@ public class MongoDBSender extends AbstractSender {
    private int connectionPoolSize = 5;
 
    @Override
-   public void init() throws Exception {
-      if (target.contains(":")) {
-         final String[] addr = target.split(":", 2);
+   public void doInit(final Properties messageAttributes) throws PerfCakeException {
+      final String t = getTarget(messageAttributes);
+      final ServerAddress a;
+
+      if (t.contains(":")) {
+         final String[] addr = t.split(":", 2);
          final String host = addr[0];
          final int port = Integer.valueOf(addr[1]);
-         mongoClient = new MongoClient(new ServerAddress(host, port), MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
+         a = new ServerAddress(host, port);
       } else {
-         mongoClient = new MongoClient(target, MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
+         a = new ServerAddress(t);
       }
-
-      db = mongoClient.getDB(dbName);
 
       if (dbUsername != null) {
-         if (!db.authenticate(dbUsername, dbPassword.toCharArray())) {
-            throw new PerfCakeException("Cannot authenticate with MongoDB. Inspect the credentials provided in the scenario.");
-         }
+         final MongoCredential c = MongoCredential.createScramSha1Credential(dbUsername, dbName, dbPassword.toCharArray());
+         mongoClient = new MongoClient(a, Collections.singletonList(c), MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
+      } else {
+         mongoClient = new MongoClient(a, MongoClientOptions.builder().connectionsPerHost(connectionPoolSize).build());
       }
+
+      db = mongoClient.getDatabase(dbName);
    }
 
    @Override
-   public void close() throws PerfCakeException {
+   public void doClose() throws PerfCakeException {
       mongoClient.close();
    }
 
    @Override
-   public Serializable doSend(Message message, Map<String, String> properties, MeasurementUnit mu) throws Exception {
+   public Serializable doSend(final Message message, final MeasurementUnit measurementUnit) throws Exception {
       try (StringReader sr = new StringReader(message.getPayload().toString());
             BufferedReader reader = new BufferedReader(sr)) {
          String line = reader.readLine();
          while (line != null) {
-            db.eval(line);
+            db.runCommand(BsonDocument.parse(line));
             line = reader.readLine();
          }
       }
+
       return null;
    }
 
