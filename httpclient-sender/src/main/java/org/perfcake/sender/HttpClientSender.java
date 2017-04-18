@@ -100,7 +100,7 @@ public class HttpClientSender extends AbstractSender {
     */
    private Method currentMethod;
 
-   private HttpClient httpClient = HttpClients.createDefault();
+   private HttpClient httpClient = HttpClients.createSystem();
 
    private HttpUriRequest currentRequest;
    private HttpResponse currentHttpResponse;
