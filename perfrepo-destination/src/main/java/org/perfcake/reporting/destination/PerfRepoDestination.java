@@ -23,24 +23,21 @@ import org.perfcake.reporting.Measurement;
 import org.perfcake.reporting.MeasurementUnit;
 import org.perfcake.reporting.Quantity;
 import org.perfcake.reporting.ReportingException;
+import org.perfcake.reporting.destination.builders.TestExecutionDtoBuilder;
+import org.perfcake.reporting.destination.builders.ValueDtoBuilder;
+import org.perfcake.reporting.destination.builders.ValuesGroupDtoBuilder;
+import org.perfcake.reporting.destination.dto.test_execution.ParameterDto;
+import org.perfcake.reporting.destination.dto.test_execution.TestExecutionDto;
+import org.perfcake.reporting.destination.dto.test_execution.ValuesGroupDto;
 import org.perfcake.reporting.reporter.Reporter;
 
-import org.perfrepo.client.PerfRepoClient;
-import org.perfrepo.model.TestExecution;
-import org.perfrepo.model.Value;
-import org.perfrepo.model.builder.TestExecutionBuilder;
-import org.perfrepo.model.builder.ValueBuilder;
-
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * The destination that store the {@link Measurement} into PerfRepo application.
  *
- * @author Pavel Drozd
  */
 public class PerfRepoDestination implements Destination {
 
@@ -50,10 +47,8 @@ public class PerfRepoDestination implements Destination {
 
    private static final String ITERATION = "Iteration";
 
-   /**
-    * PerfRepo Client used to create test executions.
-    */
-   private PerfRepoClient client;
+
+   private RestClient client;
 
    /**
     * Delimiter used to separate tags, parameters and value parameters.
@@ -78,21 +73,13 @@ public class PerfRepoDestination implements Destination {
    private String parameters;
 
    /**
-    * Parameters related to the value.
-    * The parameter format should be following: <code>thread=10</code>.
-    * The more parameters should be separated by {@value #delimiter}.
-    */
-   private String valueParameters;
-
-   /**
     * The repository URL.
     */
    private String repositoryUrl;
 
-   /**
-    * Authentication header for the rest requests.
-    */
-   private String authenticationHeader;
+   private String username;
+
+   private String password;
 
    /**
     * Tags related to test execution. More tags should be separated by {@value #delimiter}.
@@ -132,36 +119,32 @@ public class PerfRepoDestination implements Destination {
    /**
     * Parsed {@link #parameters}
     */
-   private Map<String, String> parsedParameters;
+   private Set<ParameterDto> parsedParameters;
 
    /**
     * Parsed {@link #tags}.
     */
    private Set<String> parsedTags;
 
-   /**
-    * Parsed {@link #valueParameters}.
-    */
-   private Map<String, String> parsedValueParameters;
-
-   /*
-    * (non-Javadoc)
-    *
-    * @see org.perfcake.reporting.destination.Destination#open()
-    */
    @Override
    public void open(final Reporter parentReporter) {
-      parsedTags = parseTags(tags);
+      // parse tags
+      if (tags != null && !tags.isEmpty()) {
+         parsedTags = parseTags(tags);
+      }
+      // parse execution parameters
+      System.out.println("PARAMETERS");
+      System.out.println(parameters);
       if (parameters != null && !parameters.isEmpty()) {
          parsedParameters = parseParameters(parameters);
       }
-      if (valueParameters != null && !valueParameters.isEmpty()) {
-         parsedValueParameters = parseParameters(valueParameters);
-      }
-      client = new PerfRepoClient(repositoryUrl, "/", authenticationHeader);
+      // test execution name
       if (testExecutionName == null || testExecutionName.isEmpty()) {
          testExecutionName = testUID;
       }
+
+      client = new RestClient(repositoryUrl);
+
    }
 
    @Override
@@ -171,44 +154,24 @@ public class PerfRepoDestination implements Destination {
 
    @Override
    public void report(final Measurement m) throws ReportingException {
-      if (testExecutionId != null) {
-         TestExecutionBuilder tb = TestExecution.builder().id(testExecutionId).name(testExecutionName);
-         createValue(tb.value(), m);
-         try {
-            client.addValue(tb.build());
-         } catch (Exception e) {
-            throw new ReportingException("Could report to the PerfRepo: ", e);
-         }
-      } else {
-         TestExecutionBuilder testExecutionBuilder = TestExecution.builder().testUid(testUID)
-                                                                  .name(testExecutionName);
-         testExecutionBuilder.started(new Date());
-         for (String tag : parsedTags) {
-            testExecutionBuilder.tag(tag);
-         }
-         if (parsedParameters != null && !parsedParameters.isEmpty()) {
-            for (String param : parsedParameters.keySet()) {
-               testExecutionBuilder.parameter(param, parsedParameters.get(param));
-            }
-         }
-         createValue(testExecutionBuilder.value(), m);
-         try {
-            TestExecution te = testExecutionBuilder.build();
-            testExecutionId = client.createTestExecution(te);
-         } catch (Exception e) {
-            throw new ReportingException("Could not report to the PerfRepo: ", e);
-         }
+
+      // create test execution if it does not exist
+      if (testExecutionId == null) {
+         TestExecutionDto testExecution = new TestExecutionDtoBuilder()
+                 .test(client.getTestByUid(testUID))
+                 .started(new Date())
+                 .name(testExecutionName)
+                 .tags(parsedTags)
+                 .executionParameters(parsedParameters)
+                 .build();
+
+         testExecutionId = client.createTestExecution(testExecution);
       }
+      client.addExecutionValues(testExecutionId , createValuesGroup(m));
    }
 
-   /**
-    * Method used to parse tags. The Tags are in format tag1;tag2 separated by {@value #delimiter}
-    *
-    * @param tagsToParse
-    * @return
-    */
    private Set<String> parseTags(String tagsToParse) {
-      Set<String> result = new HashSet<String>();
+      Set<String> result = new HashSet<>();
       String[] ts = tagsToParse.split(delimiter);
       for (String t : ts) {
          result.add(t);
@@ -216,62 +179,58 @@ public class PerfRepoDestination implements Destination {
       return result;
    }
 
-   /**
-    * Method used to parse parameters. The parameters are in format key=value separated by {@value #delimiter}
-    *
-    * @param paramsToParse
-    * @return
-    */
-   private Map<String, String> parseParameters(String paramsToParse) {
-      Map<String, String> result = new HashMap<String, String>();
+   private Set<ParameterDto> parseParameters(String paramsToParse) {
+      Set<ParameterDto> result = new HashSet<>();
       String[] params = paramsToParse.split(delimiter);
       for (String param : params) {
          if (param.contains("=")) {
             String[] values = param.split("=");
             if (values.length == 2) {
-               result.put(values[0], values[1]);
+               ParameterDto dto = new ParameterDto();
+               dto.setName(values[0]);
+               dto.setValue(values[1]);
+               result.add(dto);
             }
          }
       }
       return result;
    }
 
-   /**
-    * Create {@link Value} according to measurement and destination settings.
-    *
-    * @param vb
-    * @param m
-    * @throws ReportingException
-    */
-   private void createValue(ValueBuilder vb, final Measurement m) throws ReportingException {
-      Object result = null;
+   private ValuesGroupDto createValuesGroup(final Measurement m) throws ReportingException {
+      Object result;
+      // get result value
       if (reporterResultName != null && !reporterResultName.isEmpty()) {
          result = m.get(reporterResultName);
       } else {
          result = m.get();
       }
-      if (parsedValueParameters != null && !parsedValueParameters.isEmpty()) {
-         for (String key : parsedValueParameters.keySet()) {
-            vb.parameter(key, parsedValueParameters.get(key));
-         }
-      }
-      if (isIterationRecorded) {
-         vb.parameter(ITERATION, String.valueOf(m.getIteration()));
-      }
-      if (isTimeRecorded) {
-         vb.parameter(TIME, String.valueOf(m.getTime()));
-      }
-      if (isPercentageRecorded) {
-         vb.parameter(PERCENTAGE, String.valueOf(m.getPercentage()));
-      }
+
+      ValueDtoBuilder valueBuilder = new ValueDtoBuilder();
+
       if (result instanceof Double) {
-         vb.resultValue((Double) result);
+         valueBuilder.value((Double) result);
       } else if (result instanceof Quantity<?>) {
-         vb.resultValue(((Quantity<?>) result).getNumber().doubleValue());
+         valueBuilder.value(((Quantity<?>) result).getNumber().doubleValue());
       } else {
          throw new ReportingException("Unknown result type!");
       }
-      vb.metricName(metric);
+
+      // value parameters
+      if (isIterationRecorded) {
+         valueBuilder.parameter(ITERATION, m.getIteration());
+      }
+      if (isTimeRecorded) {
+         valueBuilder.parameter(TIME, m.getTime());
+      }
+      if (isPercentageRecorded) {
+         valueBuilder.parameter(PERCENTAGE, m.getPercentage());
+      }
+
+      ValuesGroupDto valuesGroup = new ValuesGroupDtoBuilder()
+              .metric(metric)
+              .value(valueBuilder.build()).build();
+
+      return valuesGroup;
    }
 
    public String getRepositoryUrl() {
@@ -288,14 +247,6 @@ public class PerfRepoDestination implements Destination {
 
    public void setTags(String tags) {
       this.tags = tags;
-   }
-
-   public String getAuthenticationHeader() {
-      return authenticationHeader;
-   }
-
-   public void setAuthenticationHeader(String authenticationHeader) {
-      this.authenticationHeader = authenticationHeader;
    }
 
    public Long getTestExecutionId() {
@@ -320,14 +271,6 @@ public class PerfRepoDestination implements Destination {
 
    public void setParameters(String parameters) {
       this.parameters = parameters;
-   }
-
-   public String getValueParameters() {
-      return valueParameters;
-   }
-
-   public void setValueParameters(String valueParameters) {
-      this.valueParameters = valueParameters;
    }
 
    public String getTestUID() {
@@ -376,5 +319,21 @@ public class PerfRepoDestination implements Destination {
 
    public void setTestExecutionName(String testExecutionName) {
       this.testExecutionName = testExecutionName;
+   }
+
+   public String getUsername() {
+      return username;
+   }
+
+   public void setUsername(String username) {
+      this.username = username;
+   }
+
+   public String getPassword() {
+      return password;
+   }
+
+   public void setPassword(String password) {
+      this.password = password;
    }
 }

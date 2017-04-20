@@ -3,7 +3,7 @@
    <modelVersion>4.0.0</modelVersion>
    <groupId>org.perfcake.plugins</groupId>
    <artifactId>perfrepo-destination</artifactId>
-   <version>7.5</version>
+   <version>7.4</version>
    <packaging>jar</packaging>
    <properties>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,11 +19,6 @@
          <groupId>org.perfcake</groupId>
          <artifactId>perfcake</artifactId>
          <version>${perfcake.version}</version>
-      </dependency>
-      <dependency>
-         <groupId>org.perfrepo</groupId>
-         <artifactId>perfrepo-client</artifactId>
-         <version>${perfrepo.version}</version>
       </dependency>
    </dependencies>
    <build>
@@ -56,7 +51,7 @@
                      <overWriteReleases>false</overWriteReleases>
                      <overWriteSnapshots>false</overWriteSnapshots>
                      <overWriteIfNewer>true</overWriteIfNewer>
-                     <includeArtifactIds>perfrepo-client,perfrepo-model,httpclient,httpcore</includeArtifactIds>
+                     <includeArtifactIds>jackson-databind,jackson-core,jackson-annotations</includeArtifactIds>
                   </configuration>
                </execution>
             </executions>
